@@ -1,0 +1,12 @@
+## Interface: 80000
+## Title: OJMD
+## Notes: Gold, Time, EP by Session
+## Author: OJMD
+## Version: 8.0.0.01
+## SavedVariables: DataDB
+##SavedVariablesPerCharacter: RaidDB
+##SavedVariablesPerCharacter: Ini, vars, 
+
+localization.de.lua
+OJMD.lua
+OJMD.xml
