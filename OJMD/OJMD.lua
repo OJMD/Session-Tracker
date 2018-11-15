@@ -19,6 +19,7 @@ local ClassColors = {}
 	ClassColors[12] = "|cffC41F3B";
     ClassColors[13] = "|cffC41F3B";
     
+local MaxLevel = 120
 local CurrentCharData = {}
 local count = 0
 local currentMoney = 0
@@ -36,6 +37,61 @@ OJMD_SessionVars.Ausgaben = 0
 OJMD_SessionVars.EPRest = 0
 
 
+function OJMD_Init() 
+
+    if not DataDB then
+        DataDB = {}                                
+    end
+    
+    if not DataDB[ Heute ] then
+        DataDB[ Heute] = {}
+    end  
+
+    if not vars then
+        vars = {
+            EP = 0,
+            EPstart = 0,
+            EPrest = 0,
+            Gold = 0,
+            Goldstart=0,
+            Goldaus=0,
+            Class = CharClassIndex,
+            Name = UnitName("player"),
+            Dauerstart = 0,
+            Dauer = 0
+        }
+    end
+
+    if not DataDB[Heute][CharID] then
+        DataDB[Heute][CharID] = {
+            EP = 0,
+            EPIni = 0,
+            Gold = 0,
+            GoldIni = 0,
+            IniGold = 0,
+            Ausgaben = 0,
+            Dauer = 0,
+            DauerIni = 0,
+        }
+    end     
+
+
+    if not Ini then
+        Ini = {
+            Name = '',
+            Difficulty = '',
+            Goldstart = 0,
+            Gold = 0,
+            EP = 0,
+            EPstart = 0,
+            TimerStart = 0,
+            Dauer = 0,
+            Run = false   
+        }
+    end
+
+    if not RaidDB then RaidDB = {} end
+end    
 
 function OJMD_OnEvent(self, event, ...)
     
@@ -43,6 +99,15 @@ function OJMD_OnEvent(self, event, ...)
                                             
         OJMD_Init()  
         OJMD:SetHeight ( 70 )      
+
+        if UnitLevel("player") == MaxLevel then
+            OJMD:SetWidth ( 200 )      
+            AnzeigeEPCurrent:Hide()
+            AnzeigeEPGesamt:Hide()
+            AnzeigeInstanceEP:Hide()
+        end
+
+
         print( "Willkommen zurück " .. ClassColors[ vars.Class ] .. UnitName("player") .."|r !" )
 
     end
@@ -85,9 +150,9 @@ function OJMD_OnEvent(self, event, ...)
             --[[ Instance wurde verlassen ]]
             if ( Ini.Run ) then
 
-                DataDB[ Heute]["Chars"][CharID].GoldIni     = DataDB[ Heute]["Chars"][CharID].GoldIni   + Ini.Gold
-                DataDB[ Heute]["Chars"][CharID].EPIni       = DataDB[ Heute]["Chars"][CharID].EPIni     + Ini.EP
-                DataDB[ Heute]["Chars"][CharID].DauerIni    = DataDB[ Heute]["Chars"][CharID].DauerIni  + Ini.Dauer
+                DataDB[ Heute][CharID].GoldIni     = DataDB[ Heute][CharID].GoldIni   + Ini.Gold
+                DataDB[ Heute][CharID].EPIni       = DataDB[ Heute][CharID].EPIni     + Ini.EP
+                DataDB[ Heute][CharID].DauerIni    = DataDB[ Heute][CharID].DauerIni  + Ini.Dauer
 
                 --[[ Instance Run speichern ]]
                 if not RaidDB[ Ini.Typ ] then RaidDB[ Ini.Typ ] = {} end
@@ -137,82 +202,12 @@ function OJMD_OnEvent(self, event, ...)
     end
 end
 
-function OJMD_Init() 
-
-    if not DataDB then
-        DataDB = {}                                
-    end
-    
-    if not DataDB[ Heute ] then
-        DataDB[ Heute] = {}
-    end
-
-    if not DataDB[ Heute ]["Chars"] then
-        DataDB[ Heute]["Chars"] = {}
-    end    
-
-    if not vars then
-        vars = {
-            EP = 0,
-            EPstart = 0,
-            EPrest = 0,
-            Gold = 0,
-            Goldstart=0,
-            Goldaus=0,
-            Class = CharClassIndex,
-            Name = UnitName("player"),
-            Dauerstart = 0,
-            Dauer = 0
-        }
-    end
-
-    if not DataDB[ Heute ]["Chars"][CharID] then
-        DataDB[ Heute]["Chars"][CharID] = {
-            EP = 0,
-            EPIni = 0,
-            Gold = 0,
-            GoldIni = 0,
-            IniGold = 0,
-            Ausgaben = 0,
-            Dauer = 0,
-            DauerIni = 0,
-        }
-    else 
-        -- vars.EP =  DataDB[ Heute]["Chars"][CharID].EP           
-        -- vars.Gold =  DataDB[ Heute]["Chars"][CharID].Gold           
-        -- vars.Dauer =  DataDB[ Heute]["Chars"][CharID].Dauer     
-    end     
-
-
-    if not Ini then
-        Ini = {
-            Name = '',
-            Difficulty = '',
-            Goldstart = 0,
-            Gold = 0,
-            EP = 0,
-            EPstart = 0,
-            TimerStart = 0,
-            Dauer = 0,
-            Run = false   
-        }
-    end
-            --vars.EPstart = UnitXP("player");
-            --vars.Goldstart = GetMoney("player");
-            -- vars.Dauerstart = GetTime();
-  
-
-    if not RaidDB then RaidDB = {} end
-
-    --print("Init() ......")
-    
-end    
 
 function OJMD_UpdateGold() 
 
     if ( currentMoney == nil ) or ( currentMoney <= 0 ) then
         currentMoney = GetMoney("player") 
-        print( "init - Start Gold: " .. currentMoney .. " -> " .. GetMoney("player") )
+        --print( "init - Start Gold: " .. currentMoney .. " -> " .. GetMoney("player") )
     end
 
     local new_money;
@@ -225,16 +220,16 @@ function OJMD_UpdateGold()
     
     -- add the diff to character's money
     if((new_money - currentMoney ) < 0) then
-        DataDB[Heute]["Chars"][CharID].Ausgaben = DataDB[Heute]["Chars"][CharID].Ausgaben + (new_money - currentMoney)
+        DataDB[Heute][CharID].Ausgaben = DataDB[Heute][CharID].Ausgaben + (new_money - currentMoney)
     end
 
     OJMD_SessionVars.Gold = OJMD_SessionVars.Gold + (new_money - currentMoney);
     
     
-    DataDB[Heute]["Chars"][CharID].Gold = DataDB[Heute]["Chars"][CharID].Gold + (new_money - currentMoney);
+    DataDB[Heute][CharID].Gold = DataDB[Heute][CharID].Gold + (new_money - currentMoney);
     
     AnzeigeGoldCurrent:SetText( formatGoldString( OJMD_SessionVars.Gold ) )
-    AnzeigeGoldGesamt:SetText( formatGoldString( DataDB[Heute]["Chars"][CharID].Gold ) )
+    AnzeigeGoldGesamt:SetText( formatGoldString( DataDB[Heute][CharID].Gold ) )
     
     -- set for next money add
     currentMoney = new_money;
@@ -252,7 +247,7 @@ function OJMD_UpdateEP()
     
     if ( currentEP == nil ) or ( currentEP <= 0 ) then
         currentEP = UnitXP("player") 
-        print( "init - Start EP: " .. currentEP .. " -> " .. UnitXP("player") )
+        --print( "init - Start EP: " .. currentEP .. " -> " .. UnitXP("player") )
     end  
 
     local new_EP
@@ -265,14 +260,14 @@ function OJMD_UpdateEP()
     -- add the diff to character's money
     if((new_EP - currentEP ) > 0) then
         OJMD_SessionVars.EP = OJMD_SessionVars.EP + (new_EP - currentEP);
-        DataDB[ Heute]["Chars"][CharID].EP = DataDB[ Heute]["Chars"][CharID].EP + (new_EP - currentEP);
+        DataDB[ Heute][CharID].EP = DataDB[ Heute][CharID].EP + (new_EP - currentEP);
     end
     
     OJMD_SessionVars.EPRest = UnitXPMax("player") - UnitXP("player");
     
     
     AnzeigeEPCurrent:SetText( formatiereEP( OJMD_SessionVars.EP ) )
-    AnzeigeEPGesamt:SetText( formatiereEP( DataDB[ Heute]["Chars"][CharID].EP ) )
+    AnzeigeEPGesamt:SetText( formatiereEP( DataDB[ Heute][CharID].EP ) )
     
     
     currentEP = new_EP
@@ -291,8 +286,8 @@ function OJMD_UpdateDauer()
         OJMD_SessionVars.DauerStart = GetTime()
     end
     
-    if((DataDB[ Heute]["Chars"][CharID].DauerStart == nil) or (DataDB[ Heute]["Chars"][CharID].DauerStart <= 0)) then
-        DataDB[ Heute]["Chars"][CharID].DauerStart = GetTime()
+    if((DataDB[ Heute][CharID].DauerStart == nil) or (DataDB[ Heute][CharID].DauerStart <= 0)) then
+        DataDB[ Heute][CharID].DauerStart = GetTime()
     end
     
     if ( Ini.Run ) then                
@@ -303,10 +298,10 @@ function OJMD_UpdateDauer()
 
     OJMD_SessionVars.Dauer = ( GetTime() - OJMD_SessionVars.DauerStart )    
 
-    DataDB[ Heute]["Chars"][CharID].Dauer = ( GetTime() - DataDB[ Heute]["Chars"][CharID].DauerStart )
+    DataDB[ Heute][CharID].Dauer = ( GetTime() - DataDB[ Heute][CharID].DauerStart )
 
     AnzeigeDauerCurrent:SetText( makeTimeString( OJMD_SessionVars.Dauer ) )
-    AnzeigeDauerGesamt:SetText( makeTimeString( DataDB[ Heute]["Chars"][CharID].Dauer ) )
+    AnzeigeDauerGesamt:SetText( makeTimeString( DataDB[ Heute][CharID].Dauer ) )
 
 end 
 
@@ -483,7 +478,7 @@ OJMD_TableBrowser = {}
 
 do
     function OJMD_TableBrowser.Init()
-     print('INIT(): '  .. table.getn(RaidDB) )
+     --print('INIT(): '  .. table.getn(RaidDB) )
         local tempMax = 0
         for i,v in pairs( RaidDB ) do            
             if table.getn(RaidDB[i]) > tempMax then
@@ -584,8 +579,7 @@ do
             currOrder = "desc"
         end
 
-        --print("Sort ID: " .. id .. " -> " .. translateID[id] )
-
+        print("Sort ID: " .. id .. " -> " .. translateID[id] )
 
         table.sort( db, function(v1,v2) 
             if currOrder == "desc" then
@@ -601,19 +595,29 @@ do
     local selection = nil
 
     function OJMD_TableBrowser.SelectEntry( id )
+
+        -- if id ~= nil then
+        --     print("ID: " .. id)
+        --     table.remove( db , id )
+        -- end
+
+        -- OJMD_TableBrowser.Update()
+
+
         if selection then
             for i = 1, table.getn(db) do
-                _G["OJMD_ListFrameEntry" .. i .. "BG"]:Hide()
+                _G["OJMD_ListEntry" .. i .. "BG"]:Hide()
             end
             selection.isSelected = nil
         end
         selection = db[ id ]
         selection.isSelected = true
     end
-
     function OJMD_TableBrowser.IsSelected( id )
-        --return RaidDB.party[ id ] == selection
+        return db[ id ] == selection
     end
+
+
 end
 
 function FauxScrollFrame_OnVerticalScroll( self , value , itemHeight, updateFunction)
